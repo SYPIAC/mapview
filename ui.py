@@ -81,9 +81,12 @@ def draw_coordinates(surface, mouse_pos):
 
 def draw_status_message(surface):
     """Draw the status message at the bottom of the screen"""
-    if status_message and status_message_timer > 0:
+    # Import settings to access status variables
+    import settings
+    
+    if settings.status_message and settings.status_message_timer > 0:
         font = pygame.font.SysFont(None, 24)
-        text_surface = font.render(status_message, True, WHITE)
+        text_surface = font.render(settings.status_message, True, WHITE)
         text_rect = text_surface.get_rect(bottomleft=(10, WINDOW_HEIGHT - 10))
         
         # Draw background for better visibility

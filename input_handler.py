@@ -34,7 +34,7 @@ reset_note_editing()
 
 def handle_keyboard_input(keys, tiles, selected_tile_id, all_tiles):
     """Handle keyboard input for navigation, tile selection, and shortcuts"""
-    global status_message, status_message_timer, editing_note, editing_pos, note_text
+    global editing_note, editing_pos, note_text
     # Import settings module to access its camera variables
     import settings
     
@@ -57,8 +57,8 @@ def handle_keyboard_input(keys, tiles, selected_tile_id, all_tiles):
         settings.camera_x = 0 - GRID_WIDTH_TILES / 2
         settings.camera_y = 0 - GRID_HEIGHT_TILES / 2
         
-        status_message = "Centered on origin"
-        status_message_timer = 60  # 1 second at 60 FPS
+        settings.status_message = "Centered on origin"
+        settings.status_message_timer = 60  # 1 second at 60 FPS
     
     # Handle hotkeys for tile selection
     for tile_id, tile in all_tiles.items():
@@ -118,7 +118,7 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
 
 def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
     """Handle mouse button events"""
-    global drag_active, drag_start_x, drag_start_y, last_drag_time, editing_note, editing_pos, note_text, status_message, status_message_timer
+    global drag_active, drag_start_x, drag_start_y, last_drag_time, editing_note, editing_pos, note_text
     import settings  # Import to access notes dictionary
     
     # Skip normal interaction if we're editing a note and this isn't a note confirmation
@@ -147,12 +147,12 @@ def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
         if editing_note and cell_pos != editing_pos and event.button == 1:
             if note_text.strip():  # Only save if there's actual text
                 settings.notes[editing_pos] = note_text
-                status_message = f"Note saved at ({editing_pos[0]}, {editing_pos[1]})"
+                settings.status_message = f"Note saved at ({editing_pos[0]}, {editing_pos[1]})"
             else:  # If empty text, remove the note
                 if editing_pos in settings.notes:
                     del settings.notes[editing_pos]
-                status_message = f"Empty note deleted at ({editing_pos[0]}, {editing_pos[1]})"
-            status_message_timer = 60
+                settings.status_message = f"Empty note deleted at ({editing_pos[0]}, {editing_pos[1]})"
+            settings.status_message_timer = 60
             editing_note = False
             editing_pos = None
             note_text = ""
@@ -161,8 +161,8 @@ def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
         # Handle right-click to delete notes
         if event.button == 3 and cell_pos in settings.notes:
             del settings.notes[cell_pos]
-            status_message = f"Note deleted at ({cell_x}, {cell_y})"
-            status_message_timer = 60
+            settings.status_message = f"Note deleted at ({cell_x}, {cell_y})"
+            settings.status_message_timer = 60
             return
         
         # Handle notes with left click when NOTE is selected
@@ -177,8 +177,8 @@ def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
             note_text = settings.notes.get(cell_pos, "")  # Get existing text or empty string
             
             # Make status message more visible and clear
-            status_message = f"EDITING NOTE at ({cell_x}, {cell_y}) - Type your text and press ENTER to save"
-            status_message_timer = 300  # Show for 5 seconds (300 frames at 60 FPS)
+            settings.status_message = f"EDITING NOTE at ({cell_x}, {cell_y}) - Type your text and press ENTER to save"
+            settings.status_message_timer = 300  # Show for 5 seconds (300 frames at 60 FPS)
             
             return
         
@@ -252,15 +252,17 @@ def handle_mousewheel(event):
 
 def handle_mouse_interaction(pos, button, tiles, selected_tile_id):
     """Handle placing or removing tiles from the grid"""
+    # Import settings to access status variables
+    import settings
+    
     # Get the grid coordinates of the mouse click
     grid_x, grid_y = screen_to_grid(pos[0], pos[1])
     cell_x, cell_y = grid_to_cell(grid_x, grid_y)
     
     # Check if clicking on the entrance tile - prevent modification
     if (cell_x, cell_y) == (0, 0):
-        global status_message, status_message_timer
-        status_message = "Can't modify the entrance tile at (0,0)"
-        status_message_timer = 180  # 3 seconds at 60 FPS
+        settings.status_message = "Can't modify the entrance tile at (0,0)"
+        settings.status_message_timer = 180  # 3 seconds at 60 FPS
         return None
     
     # If pipette is selected and this is a left-click, try to pick up a tile
@@ -270,12 +272,12 @@ def handle_mouse_interaction(pos, button, tiles, selected_tile_id):
         
         # Only allow picking up palette tiles
         if tile_id in tiles and tiles[tile_id].is_palette_tile:
-            status_message = f"Picked up: {tiles[tile_id].name}"
-            status_message_timer = 120  # 2 seconds at 60 FPS
+            settings.status_message = f"Picked up: {tiles[tile_id].name}"
+            settings.status_message_timer = 120  # 2 seconds at 60 FPS
             return tile_id
         else:
-            status_message = "Can't pick up this tile"
-            status_message_timer = 120
+            settings.status_message = "Can't pick up this tile"
+            settings.status_message_timer = 120
             return None
             
     # Left click - place selected tile
@@ -290,7 +292,7 @@ def handle_mouse_interaction(pos, button, tiles, selected_tile_id):
 
 def check_keys_modifiers(event, all_tiles=None):
     """Check for keyboard shortcuts with modifiers"""
-    global status_message, status_message_timer, editing_note, note_text, editing_pos
+    global editing_note, note_text, editing_pos
     import settings  # Import to access notes dictionary
     
     # If we're editing a note, handle text editing
@@ -305,14 +307,14 @@ def check_keys_modifiers(event, all_tiles=None):
             # Save the note if there's text
             if note_text.strip():
                 settings.notes[editing_pos] = note_text
-                status_message = f"NOTE SAVED at ({editing_pos[0]}, {editing_pos[1]})"
+                settings.status_message = f"NOTE SAVED at ({editing_pos[0]}, {editing_pos[1]})"
             else:
                 # If empty text, remove the note
                 if editing_pos in settings.notes:
                     del settings.notes[editing_pos]
-                status_message = f"Empty note deleted at ({editing_pos[0]}, {editing_pos[1]})"
+                settings.status_message = f"Empty note deleted at ({editing_pos[0]}, {editing_pos[1]})"
             
-            status_message_timer = 180  # 3 seconds at 60 FPS
+            settings.status_message_timer = 180  # 3 seconds at 60 FPS
             editing_note = False
             editing_pos = None
             return True
@@ -322,8 +324,8 @@ def check_keys_modifiers(event, all_tiles=None):
             editing_note = False
             editing_pos = None
             note_text = ""
-            status_message = "NOTE EDITING CANCELED"
-            status_message_timer = 180  # 3 seconds at 60 FPS
+            settings.status_message = "NOTE EDITING CANCELED"
+            settings.status_message_timer = 180  # 3 seconds at 60 FPS
             return True
             
         # Add normal characters to note

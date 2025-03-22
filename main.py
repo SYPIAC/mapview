@@ -61,11 +61,12 @@ def wrap_text(text, font, max_width):
 
 def fixed_update():
     """Update logic that happens every frame"""
-    global status_message_timer
+    # Import settings to access status message timer
+    import settings
     
     # Decrease status message timer if active
-    if status_message_timer > 0:
-        status_message_timer -= 1
+    if settings.status_message_timer > 0:
+        settings.status_message_timer -= 1
 
 def initialize():
     """Initialize the game"""

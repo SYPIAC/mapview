@@ -39,14 +39,13 @@ def show_load_dialog():
 
 def save_map(grid, camera_pos=None, zoom=None):
     """Save the map to a file"""
-    global status_message, status_message_timer
     import settings
     
     # Get file path from dialog
     file_path = show_save_dialog()
     if not file_path:
-        status_message = "Save cancelled."
-        status_message_timer = 180  # 3 seconds at 60 FPS
+        settings.status_message = "Save cancelled."
+        settings.status_message_timer = 180  # 3 seconds at 60 FPS
         return
     
     try:
@@ -71,29 +70,28 @@ def save_map(grid, camera_pos=None, zoom=None):
         with open(file_path, 'w') as f:
             json.dump(map_data, f)
         
-        status_message = f"Map saved: {os.path.basename(file_path)}"
-        status_message_timer = 180  # 3 seconds at 60 FPS
+        settings.status_message = f"Map saved: {os.path.basename(file_path)}"
+        settings.status_message_timer = 180  # 3 seconds at 60 FPS
         
     except Exception as e:
-        status_message = f"Error saving map: {str(e)}"
-        status_message_timer = 300  # 5 seconds at 60 FPS
+        settings.status_message = f"Error saving map: {str(e)}"
+        settings.status_message_timer = 300  # 5 seconds at 60 FPS
 
 def load_map(tiles):
     """Load the map from a file"""
-    global grid, status_message, status_message_timer
     import settings
     
     # Handle case when tiles is None (called from keyboard shortcut)
     if tiles is None:
-        status_message = "Can't load without tile data. Use the button instead."
-        status_message_timer = 180  # 3 seconds at 60 FPS
+        settings.status_message = "Can't load without tile data. Use the button instead."
+        settings.status_message_timer = 180  # 3 seconds at 60 FPS
         return
     
     # Get file path from dialog
     file_path = show_load_dialog()
     if not file_path:
-        status_message = "Load cancelled."
-        status_message_timer = 180  # 3 seconds at 60 FPS
+        settings.status_message = "Load cancelled."
+        settings.status_message_timer = 180  # 3 seconds at 60 FPS
         return
     
     try:
@@ -141,9 +139,9 @@ def load_map(tiles):
         # Add entrance tile
         set_entrance_tile(grid, tiles)
             
-        status_message = f"Map loaded: {os.path.basename(file_path)}"
-        status_message_timer = 180  # 3 seconds at 60 FPS
+        settings.status_message = f"Map loaded: {os.path.basename(file_path)}"
+        settings.status_message_timer = 180  # 3 seconds at 60 FPS
         
     except Exception as e:
-        status_message = f"Error loading map: {str(e)}"
-        status_message_timer = 300  # 5 seconds at 60 FPS 
+        settings.status_message = f"Error loading map: {str(e)}"
+        settings.status_message_timer = 300  # 5 seconds at 60 FPS 
