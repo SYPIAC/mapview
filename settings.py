@@ -72,11 +72,15 @@ GATE = 10
 TORCH_LIT = 11
 TORCH_UNLIT = 12
 FOUNTAIN = 13
+NOTE = 14
 ENTRANCE = -1  # Special entrance tile, moved to -1 to keep it separate from regular tiles
 
 # Create the grid - use dictionary for infinite grid
 # Keys are (x, y) tuples, values are tile IDs
 grid = {}
+
+# Create notes dictionary - keys are (x, y) tuples, values are note text
+notes = {}
 
 # Create the screen initially
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))

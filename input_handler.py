@@ -11,17 +11,36 @@ drag_start_x = 0     # Mouse X position when drag started
 drag_start_y = 0     # Mouse Y position when drag started
 last_drag_time = 0   # Time of the last drag update
 
+# Note editing variables
+editing_note = False  # Are we currently editing a note?
+editing_pos = None   # (x, y) position of the note being edited
+note_text = ""       # Current text for the note being edited
+
 # Debug logging function
 def log_debug(message):
     """Print debug messages to console with timestamp"""
     current_time = time.strftime("%H:%M:%S", time.localtime())
     print(f"[{current_time}] {message}")
 
+def reset_note_editing():
+    """Reset note editing state to avoid lingering states"""
+    global editing_note, editing_pos, note_text
+    editing_note = False
+    editing_pos = None
+    note_text = ""
+
+# Add reset call on module import to ensure clean state
+reset_note_editing()
+
 def handle_keyboard_input(keys, tiles, selected_tile_id, all_tiles):
     """Handle keyboard input for navigation, tile selection, and shortcuts"""
-    global status_message, status_message_timer
+    global status_message, status_message_timer, editing_note, editing_pos, note_text
     # Import settings module to access its camera variables
     import settings
+    
+    # If we're editing a note, handle text input differently
+    if editing_note and editing_pos:
+        return selected_tile_id
     
     # Handle arrow keys for camera movement
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -55,6 +74,10 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
     # Import settings module to access its camera variables
     import settings
     
+    # Skip normal interaction if we're editing a note
+    if editing_note:
+        return
+        
     # Handle middle mouse drag for camera panning
     if drag_active and pygame.mouse.get_pressed()[1]:  # Middle mouse button held (index 1)
         # Calculate drag distance (scaled by drag sensitivity and zoom)
@@ -87,7 +110,12 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
 
 def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
     """Handle mouse button events"""
-    global drag_active, drag_start_x, drag_start_y, last_drag_time
+    global drag_active, drag_start_x, drag_start_y, last_drag_time, editing_note, editing_pos, note_text, status_message, status_message_timer
+    import settings  # Import to access notes dictionary
+    
+    # Skip normal interaction if we're editing a note and this isn't a note confirmation
+    if editing_note and event.button != 1:
+        return
     
     # Middle mouse button press - start drag
     if event.button == 2:  # Middle mouse button pressed
@@ -102,6 +130,51 @@ def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
     
     # Left or right mouse button in grid area
     elif (event.button == 1 or event.button == 3) and event.pos[0] < GRID_WIDTH:
+        # Get the grid position
+        grid_x, grid_y = screen_to_grid(event.pos[0], event.pos[1])
+        cell_x, cell_y = grid_to_cell(grid_x, grid_y)
+        cell_pos = (cell_x, cell_y)
+        
+        # If we're editing a note and this is a different position, save the current note first
+        if editing_note and cell_pos != editing_pos and event.button == 1:
+            if note_text.strip():  # Only save if there's actual text
+                settings.notes[editing_pos] = note_text
+                status_message = f"Note saved at ({editing_pos[0]}, {editing_pos[1]})"
+            else:  # If empty text, remove the note
+                if editing_pos in settings.notes:
+                    del settings.notes[editing_pos]
+                status_message = f"Empty note deleted at ({editing_pos[0]}, {editing_pos[1]})"
+            status_message_timer = 60
+            editing_note = False
+            editing_pos = None
+            note_text = ""
+            return
+        
+        # Handle right-click to delete notes
+        if event.button == 3 and cell_pos in settings.notes:
+            del settings.notes[cell_pos]
+            status_message = f"Note deleted at ({cell_x}, {cell_y})"
+            status_message_timer = 60
+            return
+        
+        # Handle notes with left click when NOTE is selected
+        if event.button == 1 and selected_tile_id == NOTE:
+            # If already editing a note at this position, continue with text entry
+            if editing_note and cell_pos == editing_pos:
+                return
+            
+            # Start editing a new note or existing note
+            editing_note = True
+            editing_pos = cell_pos
+            note_text = settings.notes.get(cell_pos, "")  # Get existing text or empty string
+            
+            # Make status message more visible and clear
+            status_message = f"EDITING NOTE at ({cell_x}, {cell_y}) - Type your text and press ENTER to save"
+            status_message_timer = 300  # Show for 5 seconds (300 frames at 60 FPS)
+            
+            return
+        
+        # If we're not handling notes specifically, proceed with normal interaction
         handle_mouse_interaction(event.pos, event.button, tiles, selected_tile_id)
     
     return None  # No tile selection in input handler
@@ -189,8 +262,49 @@ def handle_mouse_interaction(pos, button, tiles, selected_tile_id):
 
 def check_keys_modifiers(event, all_tiles=None):
     """Check for keyboard shortcuts with modifiers"""
-    global status_message, status_message_timer
+    global status_message, status_message_timer, editing_note, note_text, editing_pos
+    import settings  # Import to access notes dictionary
     
+    # If we're editing a note, handle text editing
+    if editing_note:
+        # Check for backspace
+        if event.key == pygame.K_BACKSPACE:
+            note_text = note_text[:-1]
+            return True
+            
+        # Check for Enter key to finish editing
+        if event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+            # Save the note if there's text
+            if note_text.strip():
+                settings.notes[editing_pos] = note_text
+                status_message = f"NOTE SAVED at ({editing_pos[0]}, {editing_pos[1]})"
+            else:
+                # If empty text, remove the note
+                if editing_pos in settings.notes:
+                    del settings.notes[editing_pos]
+                status_message = f"Empty note deleted at ({editing_pos[0]}, {editing_pos[1]})"
+            
+            status_message_timer = 180  # 3 seconds at 60 FPS
+            editing_note = False
+            editing_pos = None
+            return True
+            
+        # Check for escape to cancel
+        if event.key == pygame.K_ESCAPE:
+            editing_note = False
+            editing_pos = None
+            note_text = ""
+            status_message = "NOTE EDITING CANCELED"
+            status_message_timer = 180  # 3 seconds at 60 FPS
+            return True
+            
+        # Add normal characters to note
+        if event.unicode and len(event.unicode) == 1 and ord(event.unicode) >= 32:
+            note_text += event.unicode
+            return True
+            
+        return True  # Block further key processing when editing
+            
     # Check if ctrl key is pressed
     ctrl_pressed = pygame.key.get_mods() & (pygame.KMOD_CTRL | pygame.KMOD_META)
     

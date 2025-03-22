@@ -12,6 +12,8 @@ class Tile:
         self.hotkey = hotkey
         self.scaled_image = None
         self.is_palette_tile = is_palette_tile  # Whether this tile appears in the palette
+        self.is_note = id == NOTE  # Is this a note tile?
+        self.note_overlay_img = None  # For storing the 'N' overlay image
         
         # Load the image if it exists, otherwise use the color
         if os.path.exists(img_path):
@@ -49,6 +51,7 @@ def load_tiles():
         TORCH_LIT: Tile(TORCH_LIT, "Torch (Lit)", "tiles/torch_lit.png", (255, 140, 0), "MINUS"),  # Dark orange
         TORCH_UNLIT: Tile(TORCH_UNLIT, "Torch (Unlit)", "tiles/torch_unlit.png", (128, 128, 128), "EQUALS"),  # Gray
         FOUNTAIN: Tile(FOUNTAIN, "Fountain", "tiles/fountain.png", (0, 191, 255), "LEFTBRACKET"),  # Deep sky blue
+        NOTE: Tile(NOTE, "Note", "tiles/note.png", BLUE, "n"),  # Blue note tile
         ENTRANCE: Tile(ENTRANCE, "Entrance", "tiles/entrance.png", RED, is_palette_tile=False)
     }
     return tiles

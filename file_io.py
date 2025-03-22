@@ -53,9 +53,13 @@ def save_map(grid, camera_pos=None, zoom=None):
         # Create a copy of the grid without the entrance tile (since it's always at 0,0)
         grid_to_save = {str(k): v for k, v in grid.items() if k != (0, 0) and v != EMPTY}
         
+        # Save notes - convert tuple keys to strings for JSON
+        notes_to_save = {str(k): v for k, v in settings.notes.items()}
+        
         # Create data object with all map information
         map_data = {
             "grid": grid_to_save,
+            "notes": notes_to_save,
             "camera": {
                 "x": settings.camera_x,
                 "y": settings.camera_y
@@ -100,11 +104,21 @@ def load_map(tiles):
         # Clear existing grid
         grid.clear()
         
+        # Clear existing notes
+        settings.notes.clear()
+        
         # Load grid data
         for pos_str, tile_id in map_data["grid"].items():
             # Convert string coordinates back to tuple
             x, y = eval(pos_str)
             grid[(x, y)] = tile_id
+            
+        # Load notes data if present
+        if "notes" in map_data:
+            for pos_str, note_text in map_data["notes"].items():
+                # Convert string coordinates back to tuple
+                x, y = eval(pos_str)
+                settings.notes[(x, y)] = note_text
             
         # Restore camera position
         if "camera" in map_data:

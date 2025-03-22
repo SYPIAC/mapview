@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import pygame
 import sys
+import os
 from settings import *
 from tiles import load_tiles, set_entrance_tile, grid_to_cell
 from ui import (
@@ -19,8 +20,44 @@ from input_handler import (
     handle_mouse_button,
     handle_mousewheel,
     check_keys_modifiers,
-    handle_mouse_interaction
+    handle_mouse_interaction,
+    editing_note,
+    note_text,
+    editing_pos
 )
+
+def wrap_text(text, font, max_width):
+    """Helper function to wrap text to a maximum width"""
+    words = text.split()
+    wrapped_lines = []
+    current_line = ""
+    
+    for word in words:
+        # Try adding the next word
+        test_line = current_line + word + " "
+        # Check if it would be too wide
+        width, _ = font.size(test_line)
+        
+        if width <= max_width:
+            current_line = test_line  # Still fits, keep going
+        else:
+            if current_line:  # If we have text for this line, add it
+                wrapped_lines.append(current_line)
+                current_line = word + " "  # Start a new line with this word
+            else:
+                # Word is too long for the whole line, force add it
+                wrapped_lines.append(word + " ")
+                current_line = ""
+    
+    # Add the last line if it has content
+    if current_line:
+        wrapped_lines.append(current_line)
+    
+    # If there are no lines (empty note), create an empty line
+    if not wrapped_lines:
+        wrapped_lines = [""]
+        
+    return wrapped_lines
 
 def fixed_update():
     """Update logic that happens every frame"""
@@ -37,6 +74,18 @@ def initialize():
     
     # Initialize screen
     init_screen()
+    
+    # Create note tile image if it doesn't exist
+    note_path = "tiles/note.png"
+    if not os.path.exists(note_path):
+        # Create a transparent image with a blue 'N' label
+        note_img = pygame.Surface((32, 32), pygame.SRCALPHA)
+        # Draw small letter N in blue in the top-left corner
+        font = pygame.font.SysFont(None, 20)
+        n_label = font.render("N", True, BLUE)
+        note_img.blit(n_label, (2, 2))
+        # Save the image
+        pygame.image.save(note_img, note_path)
     
     # Load tiles
     all_tiles = load_tiles()
@@ -71,6 +120,9 @@ def main():
     # Make the selected tile ID global so it can be accessed from mouse_motion handler
     global selected_tile_id
     selected_tile_id = WALL
+    
+    # Import once at the start to avoid reimporting every frame
+    from input_handler import editing_note, note_text, editing_pos
     
     # Main game loop
     running = True
@@ -176,11 +228,66 @@ def main():
         # Draw UI elements
         draw_coordinates(screen, mouse_pos)
         draw_status_message(screen)
+        
         save_button.draw(screen)
         load_button.draw(screen)
         
         # Ensure entrance tile is always at (0,0)
         set_entrance_tile(grid, all_tiles)
+        
+        # Re-import every frame to ensure we have the latest state
+        from input_handler import editing_note, note_text, editing_pos
+        
+        # Display note editing status and current text if editing - DRAW LAST TO ENSURE VISIBILITY
+        if editing_note and editing_pos is not None:
+            # Draw a full-width notification bar at the top to indicate editing mode
+            top_banner = pygame.Rect(0, 0, WINDOW_WIDTH, 30)
+            pygame.draw.rect(screen, BLUE, top_banner)
+            banner_font = pygame.font.SysFont(None, 24)
+            banner_text = f"EDITING NOTE AT ({editing_pos[0]}, {editing_pos[1]})"
+            banner_surface = banner_font.render(banner_text, True, WHITE)
+            screen.blit(banner_surface, (10, 8))
+            
+            # Create a very prominent edit box with high contrast
+            edit_font = pygame.font.SysFont(None, 24)
+            
+            # Make the text input area stand out more
+            text_bg_rect = pygame.Rect(10, WINDOW_HEIGHT - 70, GRID_WIDTH - 20, 60)
+            
+            # Draw with high contrast
+            pygame.draw.rect(screen, (0, 0, 80), text_bg_rect)  # Dark blue background
+            pygame.draw.rect(screen, WHITE, text_bg_rect, 3)    # Thicker white outline
+            
+            # Add a prompt and make the text more visible
+            prompt = "Note: "
+            
+            # Word wrap the text to fit in the edit box
+            max_edit_width = text_bg_rect.width - 30  # Allow for padding
+            
+            # Add blinking cursor for edit feedback
+            display_text = note_text
+            if (pygame.time.get_ticks() // 500) % 2 == 0:
+                display_text += "|"
+                
+            # Get wrapped text lines
+            display_with_prompt = prompt + display_text
+            wrapped_lines = wrap_text(display_with_prompt, edit_font, max_edit_width)
+            
+            # Only display the last two lines if there are more than 2
+            # (since our edit box can comfortably fit 2 lines)
+            if len(wrapped_lines) > 2:
+                wrapped_lines = wrapped_lines[-2:]
+            
+            # Draw each line
+            for i, line in enumerate(wrapped_lines):
+                note_surface = edit_font.render(line, True, (255, 255, 100))  # Bright yellow text
+                screen.blit(note_surface, (20, WINDOW_HEIGHT - 60 + (i * edit_font.get_height())))
+            
+            # Add a hint about saving
+            hint_font = pygame.font.SysFont(None, 18)
+            hint_text = "Press ENTER to save or ESC to cancel"
+            hint_surface = hint_font.render(hint_text, True, (255, 255, 255))  # White text
+            screen.blit(hint_surface, (20, WINDOW_HEIGHT - 25))
         
         # Update the display
         pygame.display.flip()
