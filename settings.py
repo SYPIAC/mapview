@@ -49,9 +49,6 @@ WINDOW_TITLE = "Dungeon Mapper"
 camera_x = 0 - GRID_WIDTH_TILES / 2  # Start with camera centered on (0,0)
 camera_y = 0 - GRID_HEIGHT_TILES / 2  # Start with camera centered on (0,0)
 scroll_speed = 1  # How many tiles to scroll per key press
-middle_mouse_drag = False
-drag_start_x = 0
-drag_start_y = 0
 drag_sensitivity = 2.5  # Higher value = less sensitive
 
 # UI elements

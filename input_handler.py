@@ -1,8 +1,21 @@
 import pygame
 import math
+import time
 from settings import *
 from tiles import grid_to_cell, screen_to_grid
 from file_io import save_map, load_map
+
+# Additional drag tracking variables
+drag_active = False  # Flag to track if we're in an active drag
+drag_start_x = 0     # Mouse X position when drag started
+drag_start_y = 0     # Mouse Y position when drag started
+last_drag_time = 0   # Time of the last drag update
+
+# Debug logging function
+def log_debug(message):
+    """Print debug messages to console with timestamp"""
+    current_time = time.strftime("%H:%M:%S", time.localtime())
+    print(f"[{current_time}] {message}")
 
 def handle_keyboard_input(keys, tiles, selected_tile_id, all_tiles):
     """Handle keyboard input for navigation, tile selection, and shortcuts"""
@@ -58,18 +71,18 @@ def handle_keyboard_input(keys, tiles, selected_tile_id, all_tiles):
 
 def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
     """Handle mouse movement events"""
-    global middle_mouse_drag, drag_start_x, drag_start_y, camera_x, camera_y
+    global drag_active, drag_start_x, drag_start_y, camera_x, camera_y, last_drag_time
     # Import settings module to access its camera variables
     import settings
     
     # Handle middle mouse drag for camera panning
-    if middle_mouse_drag and pygame.mouse.get_pressed()[1]:  # Middle mouse button held (index 1)
+    if drag_active and pygame.mouse.get_pressed()[1]:  # Middle mouse button held (index 1)
         # Calculate drag distance (scaled by drag sensitivity and zoom)
         drag_dist_x = (drag_start_x - event.pos[0]) / drag_sensitivity
         drag_dist_y = (drag_start_y - event.pos[1]) / drag_sensitivity
         
         # Only update if there's actual movement (avoid tiny jumps)
-        if abs(drag_dist_x) > 0.5 or abs(drag_dist_y) > 0.5:
+        if abs(drag_dist_x) > 0.1 or abs(drag_dist_y) > 0.1:
             # Update camera position
             camera_x += drag_dist_x / (BASE_TILE_SIZE * zoom_level)
             camera_y += drag_dist_y / (BASE_TILE_SIZE * zoom_level)
@@ -77,10 +90,17 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
             # Update settings module's camera position too
             settings.camera_x = camera_x
             settings.camera_y = camera_y
+            
+            # Record the time of this camera movement
+            last_drag_time = time.time()
         
         # Always update drag start position
         drag_start_x = event.pos[0]
         drag_start_y = event.pos[1]
+    
+    # If the middle mouse button is not pressed anymore, end the drag
+    elif drag_active and not pygame.mouse.get_pressed()[1]:
+        drag_active = False
         
     # Drawing with left or right mouse button held down
     elif event.pos[0] < GRID_WIDTH:  # Only within grid area
@@ -93,20 +113,22 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
 
 def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
     """Handle mouse button events"""
-    global middle_mouse_drag, drag_start_x, drag_start_y, camera_x, camera_y
+    global drag_active, drag_start_x, drag_start_y, camera_x, camera_y, last_drag_time
     
     # Check if inside the grid area (not palette)
     in_grid_area = event.pos[0] < GRID_WIDTH
     
     # Middle mouse button press - start drag
-    if event.button == 2 and in_grid_area:  # Middle mouse button
-        middle_mouse_drag = True
+    if event.button == 2 and in_grid_area:  # Middle mouse button pressed
+        drag_active = True
         drag_start_x = event.pos[0]
         drag_start_y = event.pos[1]
+        last_drag_time = time.time()
     
     # Middle mouse button release - end drag
-    elif event.button == 2:  # Changed from 'if' to 'elif' to avoid handling press and release at the same time
-        middle_mouse_drag = False
+    elif event.button == 2:  # Middle mouse button released        
+        # Always end the drag state regardless
+        drag_active = False
     
     # Left or right mouse button
     elif (event.button == 1 or event.button == 3) and in_grid_area:  # Left or right mouse button
