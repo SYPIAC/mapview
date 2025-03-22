@@ -55,7 +55,7 @@ def initialize():
     save_button, load_button = update_buttons_position()
     
     # Set button actions
-    save_button.action = lambda: save_map(grid, (camera_x, camera_y), zoom_level)
+    save_button.action = lambda: save_map(grid)
     load_button.action = lambda: load_map(all_tiles)
     
     return all_tiles, save_button, load_button

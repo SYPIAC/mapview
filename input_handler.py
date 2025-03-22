@@ -19,44 +19,24 @@ def log_debug(message):
 
 def handle_keyboard_input(keys, tiles, selected_tile_id, all_tiles):
     """Handle keyboard input for navigation, tile selection, and shortcuts"""
-    global camera_x, camera_y, status_message, status_message_timer
+    global status_message, status_message_timer
     # Import settings module to access its camera variables
     import settings
     
-    # Keep track of old camera position to detect changes
-    old_camera_x = camera_x
-    old_camera_y = camera_y
-    moved = False
-    
     # Handle arrow keys for camera movement
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-        camera_x -= scroll_speed / zoom_level
-        # Update settings module's camera position too
-        settings.camera_x = camera_x
-        moved = True
+        settings.camera_x -= scroll_speed / settings.zoom_level
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-        camera_x += scroll_speed / zoom_level
-        # Update settings module's camera position too
-        settings.camera_x = camera_x
-        moved = True
+        settings.camera_x += scroll_speed / settings.zoom_level
     if keys[pygame.K_UP] or keys[pygame.K_w]:
-        camera_y -= scroll_speed / zoom_level
-        # Update settings module's camera position too
-        settings.camera_y = camera_y
-        moved = True
+        settings.camera_y -= scroll_speed / settings.zoom_level
     if keys[pygame.K_DOWN] or keys[pygame.K_s]:
-        camera_y += scroll_speed / zoom_level
-        # Update settings module's camera position too
-        settings.camera_y = camera_y
-        moved = True
+        settings.camera_y += scroll_speed / settings.zoom_level
     
     # Spacebar to reset to origin
     if keys[pygame.K_SPACE]:
-        camera_x = 0 - GRID_WIDTH_TILES / 2
-        camera_y = 0 - GRID_HEIGHT_TILES / 2
-        # Update settings module's camera position too
-        settings.camera_x = camera_x
-        settings.camera_y = camera_y
+        settings.camera_x = 0 - GRID_WIDTH_TILES / 2
+        settings.camera_y = 0 - GRID_HEIGHT_TILES / 2
         
         status_message = "Centered on origin"
         status_message_timer = 60  # 1 second at 60 FPS
@@ -71,7 +51,7 @@ def handle_keyboard_input(keys, tiles, selected_tile_id, all_tiles):
 
 def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
     """Handle mouse movement events"""
-    global drag_active, drag_start_x, drag_start_y, camera_x, camera_y, last_drag_time
+    global drag_active, drag_start_x, drag_start_y, last_drag_time
     # Import settings module to access its camera variables
     import settings
     
@@ -82,12 +62,8 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
         drag_dist_y = (drag_start_y - event.pos[1]) / drag_sensitivity
         
         # Update camera position
-        camera_x += drag_dist_x / (BASE_TILE_SIZE * zoom_level)
-        camera_y += drag_dist_y / (BASE_TILE_SIZE * zoom_level)
-        
-        # Update settings module's camera position too
-        settings.camera_x = camera_x
-        settings.camera_y = camera_y
+        settings.camera_x += drag_dist_x / (BASE_TILE_SIZE * settings.zoom_level)
+        settings.camera_y += drag_dist_y / (BASE_TILE_SIZE * settings.zoom_level)
         
         # Record the time of this camera movement
         last_drag_time = time.time()
@@ -111,7 +87,7 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
 
 def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
     """Handle mouse button events"""
-    global drag_active, drag_start_x, drag_start_y, camera_x, camera_y, last_drag_time
+    global drag_active, drag_start_x, drag_start_y, last_drag_time
     
     # Middle mouse button press - start drag
     if event.button == 2:  # Middle mouse button pressed
@@ -174,10 +150,6 @@ def handle_mousewheel(event):
     # Update all related dimensions
     settings.update_grid_dimensions()
     
-    # Update the global zoom_level
-    global zoom_level
-    zoom_level = settings.zoom_level
-    
     # Calculate where the same grid point would now appear on screen
     new_screen_x = (grid_x - settings.camera_x) * (settings.BASE_TILE_SIZE * new_zoom)
     new_screen_y = (grid_y - settings.camera_y) * (settings.BASE_TILE_SIZE * new_zoom)
@@ -193,11 +165,6 @@ def handle_mousewheel(event):
     # Adjust camera by this difference to keep point under mouse
     settings.camera_x += grid_dx
     settings.camera_y += grid_dy
-    
-    # Update global camera positions to match settings
-    global camera_x, camera_y
-    camera_x = settings.camera_x
-    camera_y = settings.camera_y
 
 def handle_mouse_interaction(pos, button, tiles, selected_tile_id):
     """Handle placing or removing tiles from the grid"""

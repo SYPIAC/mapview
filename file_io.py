@@ -37,9 +37,10 @@ def show_load_dialog():
     root.destroy()
     return file_path
 
-def save_map(grid, camera_pos, zoom):
+def save_map(grid, camera_pos=None, zoom=None):
     """Save the map to a file"""
     global status_message, status_message_timer
+    import settings
     
     # Get file path from dialog
     file_path = show_save_dialog()
@@ -56,10 +57,10 @@ def save_map(grid, camera_pos, zoom):
         map_data = {
             "grid": grid_to_save,
             "camera": {
-                "x": camera_x,
-                "y": camera_y
+                "x": settings.camera_x,
+                "y": settings.camera_y
             },
-            "zoom": zoom_level
+            "zoom": settings.zoom_level
         }
         
         # Save to file
@@ -75,7 +76,8 @@ def save_map(grid, camera_pos, zoom):
 
 def load_map(tiles):
     """Load the map from a file"""
-    global grid, camera_x, camera_y, zoom_level, status_message, status_message_timer
+    global grid, status_message, status_message_timer
+    import settings
     
     # Handle case when tiles is None (called from keyboard shortcut)
     if tiles is None:
@@ -106,16 +108,16 @@ def load_map(tiles):
             
         # Restore camera position
         if "camera" in map_data:
-            camera_x = map_data["camera"]["x"]
-            camera_y = map_data["camera"]["y"]
+            settings.camera_x = map_data["camera"]["x"]
+            settings.camera_y = map_data["camera"]["y"]
         else:
             # Center on origin if no camera data
-            camera_x = 0 - GRID_WIDTH_TILES / 2
-            camera_y = 0 - GRID_HEIGHT_TILES / 2
+            settings.camera_x = 0 - GRID_WIDTH_TILES / 2
+            settings.camera_y = 0 - GRID_HEIGHT_TILES / 2
             
         # Restore zoom level
         if "zoom" in map_data:
-            zoom_level = max(MIN_ZOOM, min(MAX_ZOOM, map_data["zoom"]))
+            settings.zoom_level = max(MIN_ZOOM, min(MAX_ZOOM, map_data["zoom"]))
             update_grid_dimensions()
             
             # Update scaled images for all tiles
