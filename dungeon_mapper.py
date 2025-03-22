@@ -2,6 +2,9 @@ import pygame
 import sys
 import os
 import math  # Import math module for floor function
+import json
+import tkinter as tk
+from tkinter import filedialog
 
 # Initialize pygame
 pygame.init()
@@ -13,6 +16,9 @@ GRAY = (128, 128, 128)
 DARK_GRAY = (64, 64, 64)
 BROWN = (139, 69, 19)
 LIGHT_BLUE = (173, 216, 230)
+GREEN = (50, 205, 50)
+BLUE = (30, 144, 255)
+RED = (220, 20, 60)
 
 # Base settings
 BASE_TILE_SIZE = 40
@@ -35,19 +41,30 @@ PALETTE_WIDTH = 100
 PALETTE_HEIGHT = GRID_HEIGHT
 TILE_PREVIEW_SIZE = 50
 
+# Button settings
+BUTTON_HEIGHT = 30
+BUTTON_WIDTH = 80
+BUTTON_MARGIN = 10
+
 # Window settings
 WINDOW_WIDTH = GRID_WIDTH + PALETTE_WIDTH
 WINDOW_HEIGHT = GRID_HEIGHT
 WINDOW_TITLE = "Dungeon Mapper"
 
 # Camera settings
-camera_x = 0  # Camera x position in tiles
-camera_y = 0  # Camera y position in tiles
+camera_x = 0 - GRID_WIDTH_TILES / 2  # Start with camera centered on (0,0)
+camera_y = 0 - GRID_HEIGHT_TILES / 2  # Start with camera centered on (0,0)
 scroll_speed = 1  # How many tiles to scroll per key press
 middle_mouse_drag = False
 drag_start_x = 0
 drag_start_y = 0
 drag_sensitivity = 2.5  # Higher value = less sensitive
+
+# UI elements
+save_button = None
+load_button = None
+status_message = ""
+status_message_timer = 0
 
 # Create the game window
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -55,7 +72,7 @@ pygame.display.set_caption(WINDOW_TITLE)
 
 # Tile class to store tile information
 class Tile:
-    def __init__(self, id, name, image_path, hotkey, color=None):
+    def __init__(self, id, name, image_path, hotkey=None, color=None, is_palette_tile=True):
         self.id = id
         self.name = name
         self.image_path = image_path
@@ -64,6 +81,7 @@ class Tile:
         self.image = None
         self.preview_image = None
         self.base_image = None  # Store the original loaded image
+        self.is_palette_tile = is_palette_tile  # Flag to indicate if tile appears in palette
     
     def load_image(self):
         # If the image exists, load it
@@ -102,6 +120,39 @@ class Tile:
             # Preview image size doesn't change with zoom
             self.preview_image = pygame.transform.scale(self.base_image, (TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE))
 
+# Button class for UI elements
+class Button:
+    def __init__(self, x, y, width, height, text, color, hover_color, action=None):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.color = color
+        self.hover_color = hover_color
+        self.action = action
+        self.is_hovered = False
+        self.font = pygame.font.SysFont(None, 24)
+    
+    def draw(self, surface):
+        # Determine button color based on hover state
+        current_color = self.hover_color if self.is_hovered else self.color
+        
+        # Draw button background
+        pygame.draw.rect(surface, current_color, self.rect)
+        pygame.draw.rect(surface, BLACK, self.rect, 2)  # Add border
+        
+        # Draw button text
+        text_surf = self.font.render(self.text, True, BLACK)
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        surface.blit(text_surf, text_rect)
+    
+    def check_hover(self, pos):
+        self.is_hovered = self.rect.collidepoint(pos)
+        return self.is_hovered
+    
+    def click(self):
+        if self.action:
+            return self.action()
+        return False
+
 # Function to convert float grid coordinates to integer grid coordinates
 # This ensures consistent grid snapping behavior for both positive and negative coordinates
 def grid_to_cell(grid_x, grid_y):
@@ -112,24 +163,163 @@ def grid_to_cell(grid_x, grid_y):
 EMPTY = 0
 WALL = 1
 FLOOR = 2
+ENTRANCE = 3  # Special entrance tile
 
 # Define tiles
 tiles = {
     WALL: Tile(WALL, "Wall", "tiles/wall.png", pygame.K_1, DARK_GRAY),
-    FLOOR: Tile(FLOOR, "Floor", "tiles/floor.png", pygame.K_2, BROWN)
+    FLOOR: Tile(FLOOR, "Floor", "tiles/floor.png", pygame.K_2, BROWN),
+    ENTRANCE: Tile(ENTRANCE, "Entrance", "tiles/entrance.png", None, RED, False)  # Special entrance tile, not in palette
 }
 
 # Create the grid - use dictionary for infinite grid
 # Keys are (x, y) tuples, values are tile IDs
 grid = {}
 
+# File operations for saving and loading
+def show_save_dialog():
+    """Show a save file dialog and return the selected path"""
+    root = tk.Tk()
+    root.withdraw()  # Hide the main tkinter window
+    
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".dungeon",
+        filetypes=[("Dungeon files", "*.dungeon"), ("All files", "*.*")],
+        title="Save Dungeon Map"
+    )
+    root.destroy()
+    return file_path
+
+def show_load_dialog():
+    """Show a load file dialog and return the selected path"""
+    root = tk.Tk()
+    root.withdraw()  # Hide the main tkinter window
+    
+    file_path = filedialog.askopenfilename(
+        defaultextension=".dungeon",
+        filetypes=[("Dungeon files", "*.dungeon"), ("All files", "*.*")],
+        title="Load Dungeon Map"
+    )
+    root.destroy()
+    return file_path
+
+def save_map():
+    """Save the current map to a file"""
+    global status_message, status_message_timer
+    
+    # Convert grid data to serializable format
+    # Since grid keys are tuples (x,y), convert them to strings for JSON
+    grid_data = {}
+    for pos, tile_id in grid.items():
+        # Don't save the entrance tile - it's always at (0,0)
+        if pos == (0, 0) and tile_id == ENTRANCE:
+            continue
+        grid_data[f"{pos[0]},{pos[1]}"] = tile_id
+    
+    # Prepare map data
+    map_data = {
+        "grid": grid_data,
+        "camera": {
+            "x": camera_x,
+            "y": camera_y
+        },
+        "zoom": zoom_level
+    }
+    
+    # Get file path from dialog
+    file_path = show_save_dialog()
+    if not file_path:
+        status_message = "Save cancelled"
+        status_message_timer = 120  # Show message for 2 seconds (60 fps * 2)
+        return False
+    
+    try:
+        with open(file_path, 'w') as f:
+            json.dump(map_data, f, indent=2)
+        status_message = f"Map saved: {os.path.basename(file_path)}"
+        status_message_timer = 120
+        return True
+    except Exception as e:
+        status_message = f"Error saving map: {str(e)}"
+        status_message_timer = 180
+        return False
+
+def load_map():
+    """Load a map from a file"""
+    global grid, camera_x, camera_y, zoom_level, status_message, status_message_timer
+    
+    # Get file path from dialog
+    file_path = show_load_dialog()
+    if not file_path:
+        status_message = "Load cancelled"
+        status_message_timer = 120
+        return False
+    
+    try:
+        with open(file_path, 'r') as f:
+            map_data = json.load(f)
+        
+        # Extract grid data (convert string keys back to tuple coordinates)
+        grid_data = map_data.get("grid", {})
+        new_grid = {}
+        for pos_str, tile_id in grid_data.items():
+            x, y = map(int, pos_str.split(","))
+            new_grid[(x, y)] = tile_id
+        
+        # Add entrance tile at (0,0)
+        new_grid[(0, 0)] = ENTRANCE
+        
+        # Update grid and center camera on entrance (0,0)
+        grid = new_grid
+        
+        # Center camera on entrance
+        camera_x = 0 - GRID_WIDTH_TILES / 2
+        camera_y = 0 - GRID_HEIGHT_TILES / 2
+        
+        # Update zoom level if provided
+        new_zoom = map_data.get("zoom", 1.0)
+        if new_zoom != zoom_level:
+            zoom_level = new_zoom
+            update_grid_dimensions()
+        
+        status_message = f"Map loaded: {os.path.basename(file_path)}"
+        status_message_timer = 120
+        return True
+    except Exception as e:
+        status_message = f"Error loading map: {str(e)}"
+        status_message_timer = 180
+        return False
+
+# Create UI buttons
+def create_buttons():
+    global save_button, load_button
+    
+    # Calculate positions for buttons
+    save_x = GRID_WIDTH + (PALETTE_WIDTH - BUTTON_WIDTH * 2 - BUTTON_MARGIN) / 2
+    load_x = save_x + BUTTON_WIDTH + BUTTON_MARGIN
+    button_y = GRID_HEIGHT - BUTTON_HEIGHT * 2
+    
+    # Create buttons
+    save_button = Button(save_x, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "Save (Ctrl+S)", GREEN, (100, 255, 100), save_map)
+    load_button = Button(load_x, button_y, BUTTON_WIDTH, BUTTON_HEIGHT, "Load (Ctrl+L)", BLUE, (100, 100, 255), load_map)
+
 # Load all tile images
 def load_tile_images():
     for tile_id, tile in tiles.items():
         tile.load_image()
 
+# Set the entrance tile at (0,0)
+def set_entrance_tile():
+    grid[(0, 0)] = ENTRANCE
+
 # Load tile images
 load_tile_images()
+
+# Ensure entrance tile is at (0,0)
+set_entrance_tile()
+
+# Create UI buttons
+create_buttons()
 
 # Currently selected tile type
 selected_tile = WALL
@@ -153,6 +343,9 @@ def update_grid_dimensions():
     # Resize the window and update tile images
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     update_all_tile_images()
+    
+    # Recreate buttons for the new window size
+    create_buttons()
 
 # Convert screen coordinates to grid coordinates
 def screen_to_grid(screen_x, screen_y):
@@ -221,6 +414,10 @@ def draw_palette():
     # Draw tiles in palette
     y_position = 60
     for tile_id, tile in tiles.items():
+        # Skip tiles that shouldn't appear in palette (like entrance)
+        if not tile.is_palette_tile:
+            continue
+            
         # Draw tile preview
         tile_rect = pygame.Rect(GRID_WIDTH + 25, y_position, TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE)
         screen.blit(tile.preview_image, tile_rect)
@@ -235,6 +432,10 @@ def draw_palette():
         
         y_position += TILE_PREVIEW_SIZE + 30
     
+    # Add entrance note
+    entrance_note = font.render("Entrance at (0,0)", True, RED)
+    screen.blit(entrance_note, (GRID_WIDTH + 10, y_position))
+    
     # Instructions
     instructions = [
         "Left click: Paint",
@@ -246,7 +447,7 @@ def draw_palette():
         "Hotkeys: 1-2 Select tiles"
     ]
     
-    y = y_position + 10
+    y = y_position + 30
     for line in instructions:
         instr = font.render(line, True, BLACK)
         screen.blit(instr, (GRID_WIDTH + 10, y))
@@ -255,6 +456,17 @@ def draw_palette():
     # Draw zoom level
     zoom_text = font.render(f"Zoom: {zoom_level:.2f}x", True, BLACK)
     screen.blit(zoom_text, (GRID_WIDTH + 10, y))
+    
+    # Draw save/load buttons
+    save_button.draw(screen)
+    load_button.draw(screen)
+    
+    # Display status message if active
+    if status_message and status_message_timer > 0:
+        status_font = pygame.font.SysFont(None, 20)
+        status_text = status_font.render(status_message, True, BLACK)
+        status_y = save_button.rect.y - 25
+        screen.blit(status_text, (GRID_WIDTH + 10, status_y))
 
 def draw_coordinates(mouse_pos):
     if mouse_pos[0] < GRID_WIDTH:
@@ -278,6 +490,10 @@ def handle_mouse_interaction(pos, button):
         # Convert to cell coordinates (integer grid coordinates)
         cell_x, cell_y = grid_to_cell(grid_x, grid_y)
         
+        # Protect the entrance tile at (0,0)
+        if (cell_x, cell_y) == (0, 0):
+            return
+        
         # Left button: paint selected tile
         if button == 1:
             grid[(cell_x, cell_y)] = selected_tile
@@ -286,24 +502,43 @@ def handle_mouse_interaction(pos, button):
             if (cell_x, cell_y) in grid:
                 del grid[(cell_x, cell_y)]
     
-    # Check if interaction is within the palette
+    # Check if interaction is within the palette area
     elif x >= GRID_WIDTH and y < GRID_HEIGHT:
+        # Check if a button was clicked
+        if save_button.is_hovered:
+            save_button.click()
+        elif load_button.is_hovered:
+            load_button.click()
         # Only handle palette selection on mouse down, not on drag
-        if button == 1:  # Left button only for palette selection
+        elif button == 1:  # Left button only for palette selection
             y_position = 60
             for tile_id, tile in tiles.items():
+                # Skip tiles that shouldn't appear in palette
+                if not tile.is_palette_tile:
+                    continue
+                    
                 tile_rect = pygame.Rect(GRID_WIDTH + 25, y_position, TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE)
                 if tile_rect.collidepoint(pos):
                     selected_tile = tile_id
                     break
                 y_position += TILE_PREVIEW_SIZE + 30
 
-def handle_keydown(key):
+def handle_keydown(key, mods):
     global selected_tile, camera_x, camera_y
+    
+    # Handle Ctrl+S for save
+    if key == pygame.K_s and mods & pygame.KMOD_CTRL:
+        save_map()
+        return
+    
+    # Handle Ctrl+L for load
+    if key == pygame.K_l and mods & pygame.KMOD_CTRL:
+        load_map()
+        return
     
     # Handle tile selection hotkeys
     for tile_id, tile in tiles.items():
-        if key == tile.hotkey:
+        if tile.hotkey and key == tile.hotkey:
             selected_tile = tile_id
             return
     
@@ -316,10 +551,10 @@ def handle_keydown(key):
         camera_y -= scroll_speed
     elif key == pygame.K_DOWN:
         camera_y += scroll_speed
-    # Return to origin (0,0) with spacebar
+    # Return to origin (0,0) with spacebar - center view
     elif key == pygame.K_SPACE:
-        camera_x = 0
-        camera_y = 0
+        camera_x = GRID_WIDTH_TILES / 2
+        camera_y = GRID_HEIGHT_TILES / 2
 
 def handle_middle_mouse_drag(current_pos):
     global camera_x, camera_y, drag_start_x, drag_start_y
@@ -374,7 +609,7 @@ def handle_mousewheel(y, pos):
 
 # Main game loop
 def main():
-    global middle_mouse_drag, drag_start_x, drag_start_y
+    global middle_mouse_drag, drag_start_x, drag_start_y, status_message_timer
     
     running = True
     mouse_down = False
@@ -386,6 +621,14 @@ def main():
     while running:
         # Store mouse position for this frame
         mouse_pos = pygame.mouse.get_pos()
+        
+        # Update button hover states
+        save_button.check_hover(mouse_pos)
+        load_button.check_hover(mouse_pos)
+        
+        # Decrement status message timer
+        if status_message_timer > 0:
+            status_message_timer -= 1
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -426,10 +669,14 @@ def main():
                             handle_mouse_interaction(mouse_pos, current_button)
                             last_grid_pos = current_grid_pos
             elif event.type == pygame.KEYDOWN:
-                handle_keydown(event.key)
+                # Pass both the key and modifier state
+                handle_keydown(event.key, pygame.key.get_mods())
         
         # Clear the screen
         screen.fill(BLACK)
+        
+        # Make sure entrance tile is always at (0,0)
+        grid[(0, 0)] = ENTRANCE
         
         # Draw grid and palette
         draw_grid()
