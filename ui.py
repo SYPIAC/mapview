@@ -1,5 +1,6 @@
 import pygame
 import math
+import settings
 from settings import *
 from tiles import grid_to_cell, grid_to_screen, screen_to_grid
 
@@ -93,7 +94,8 @@ def draw_status_message(surface):
         surface.blit(text_surface, text_rect)
 
 def draw_palette(surface, tiles, selected_tile_id):
-    """Draw the tile palette on the right side of the screen"""
+    """Draw the tile palette on the right side of the screen with a scrollbar"""
+    # Draw palette background
     palette_rect = pygame.Rect(GRID_WIDTH, 0, PALETTE_WIDTH, PALETTE_HEIGHT)
     pygame.draw.rect(surface, DARK_GRAY, palette_rect)
     
@@ -102,56 +104,172 @@ def draw_palette(surface, tiles, selected_tile_id):
     title_text = font.render("Palette", True, WHITE)
     surface.blit(title_text, (GRID_WIDTH + 10, 20))
     
-    # Draw each available tile
-    y_offset = 70
-    tile_count = 0
+    # Calculate tile preview size and spacing
+    PREVIEW_SIZE = min(45, (PALETTE_WIDTH - 60) // 3)  # Slightly larger previews
+    HORIZONTAL_SPACING = (PALETTE_WIDTH - (PREVIEW_SIZE * 3)) // 4  # Space between columns
+    VERTICAL_SPACING = 15  # Increased space between rows
+    ITEM_HEIGHT = PREVIEW_SIZE + 35  # Height of each tile including name and hotkey
     
-    for tile_id, tile in tiles.items():
-        # Skip non-palette tiles (like entrance)
-        if not tile.is_palette_tile:
-            continue
-            
-        # Draw tile selection outline
-        position = (GRID_WIDTH + PALETTE_WIDTH // 2 - TILE_PREVIEW_SIZE // 2, y_offset)
-        select_rect = pygame.Rect(position[0] - 5, position[1] - 5, 
-                                TILE_PREVIEW_SIZE + 10, TILE_PREVIEW_SIZE + 10)
+    # Get list of palette tiles
+    palette_tiles = [(id, tile) for id, tile in tiles.items() if tile.is_palette_tile]
+    
+    # Calculate total rows needed
+    TILES_PER_ROW = 3
+    total_rows = (len(palette_tiles) + TILES_PER_ROW - 1) // TILES_PER_ROW
+    
+    # Calculate visible area
+    TITLE_HEIGHT = 50
+    visible_height = PALETTE_HEIGHT - TITLE_HEIGHT
+    rows_visible = (visible_height - VERTICAL_SPACING) // ITEM_HEIGHT
+    
+    # Store max scroll value in settings for other functions to use
+    settings.max_palette_scroll = max(0, total_rows - rows_visible)
+    
+    # Scrollbar dimensions
+    SCROLLBAR_WIDTH = 15
+    scrollbar_height = min(visible_height, (visible_height * rows_visible) / total_rows)
+    
+    # Get/update scroll position (store in settings)
+    if not hasattr(settings, 'palette_scroll'):
+        settings.palette_scroll = 0
+    settings.palette_scroll = min(settings.max_palette_scroll, settings.palette_scroll)
+    
+    # Draw tiles
+    start_row = int(settings.palette_scroll)
+    start_idx = start_row * TILES_PER_ROW
+    visible_tiles = palette_tiles[start_idx:start_idx + (rows_visible * TILES_PER_ROW)]
+    
+    for idx, (tile_id, tile) in enumerate(visible_tiles):
+        row = idx // TILES_PER_ROW
+        col = idx % TILES_PER_ROW
         
-        # Highlight selected tile
+        # Calculate position
+        x = GRID_WIDTH + HORIZONTAL_SPACING + (col * (PREVIEW_SIZE + HORIZONTAL_SPACING))
+        y = TITLE_HEIGHT + (row * ITEM_HEIGHT)
+        
+        # Draw selection outline
+        select_rect = pygame.Rect(x - 2, y - 2, PREVIEW_SIZE + 4, PREVIEW_SIZE + 4)
         if tile_id == selected_tile_id:
-            pygame.draw.rect(surface, GREEN, select_rect, 3)
+            pygame.draw.rect(surface, GREEN, select_rect, 2)
         else:
             pygame.draw.rect(surface, WHITE, select_rect, 1)
         
-        # Draw tile image or color
+        # Draw tile
         if tile.original_image:
-            tile_img = pygame.transform.scale(tile.original_image, (TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE))
-            surface.blit(tile_img, position)
+            tile_img = pygame.transform.scale(tile.original_image, (PREVIEW_SIZE, PREVIEW_SIZE))
+            surface.blit(tile_img, (x, y))
         else:
-            tile_rect = pygame.Rect(position[0], position[1], TILE_PREVIEW_SIZE, TILE_PREVIEW_SIZE)
+            tile_rect = pygame.Rect(x, y, PREVIEW_SIZE, PREVIEW_SIZE)
             pygame.draw.rect(surface, tile.color, tile_rect)
             pygame.draw.rect(surface, BLACK, tile_rect, 1)
         
-        # Draw tile name
-        name_font = pygame.font.SysFont(None, 24)
+        # Draw name
+        name_font = pygame.font.SysFont(None, 20)
         name_text = name_font.render(tile.name, True, WHITE)
-        name_pos = (GRID_WIDTH + PALETTE_WIDTH // 2 - name_text.get_width() // 2, 
-                    y_offset + TILE_PREVIEW_SIZE + 5)
-        surface.blit(name_text, name_pos)
+        name_x = x + (PREVIEW_SIZE - name_text.get_width()) // 2
+        surface.blit(name_text, (name_x, y + PREVIEW_SIZE + 2))
         
         # Draw hotkey if available
         if tile.hotkey:
-            hotkey_text = f"Key: {tile.hotkey}"
+            hotkey_text = f"({tile.hotkey})"
             hotkey_surface = name_font.render(hotkey_text, True, LIGHT_BLUE)
-            hotkey_pos = (GRID_WIDTH + PALETTE_WIDTH // 2 - hotkey_surface.get_width() // 2, 
-                        name_pos[1] + name_text.get_height() + 5)
-            surface.blit(hotkey_surface, hotkey_pos)
-            y_offset += name_text.get_height() + hotkey_surface.get_height() + TILE_PREVIEW_SIZE + 25
-        else:
-            y_offset += name_text.get_height() + TILE_PREVIEW_SIZE + 15
+            hotkey_x = x + (PREVIEW_SIZE - hotkey_surface.get_width()) // 2
+            surface.blit(hotkey_surface, (hotkey_x, y + PREVIEW_SIZE + 2 + name_text.get_height()))
+    
+    # Draw scrollbar if needed
+    if settings.max_palette_scroll > 0:
+        scrollbar_x = GRID_WIDTH + PALETTE_WIDTH - SCROLLBAR_WIDTH - 5
+        scrollbar_bg = pygame.Rect(scrollbar_x, TITLE_HEIGHT, SCROLLBAR_WIDTH, visible_height)
+        pygame.draw.rect(surface, GRAY, scrollbar_bg)
         
-        tile_count += 1
+        scroll_pos = TITLE_HEIGHT + (visible_height - scrollbar_height) * (settings.palette_scroll / settings.max_palette_scroll)
+        scrollbar = pygame.Rect(scrollbar_x, scroll_pos, SCROLLBAR_WIDTH, scrollbar_height)
+        pygame.draw.rect(surface, WHITE, scrollbar)
+        
+        # Store scrollbar rect for hit testing
+        settings.scrollbar_rect = scrollbar
+    else:
+        settings.scrollbar_rect = None
+    
+    # Store palette layout information in settings for click detection
+    settings.palette_layout = {
+        'preview_size': PREVIEW_SIZE,
+        'horizontal_spacing': HORIZONTAL_SPACING,
+        'item_height': ITEM_HEIGHT,
+        'title_height': TITLE_HEIGHT,
+        'tiles_per_row': TILES_PER_ROW
+    }
     
     return palette_rect
+
+def handle_palette_scroll(event):
+    """Handle scrolling in the palette area"""
+    # Get current mouse position
+    mouse_pos = pygame.mouse.get_pos()
+    
+    # Check if mouse is over palette area (excluding title)
+    if (GRID_WIDTH <= mouse_pos[0] <= GRID_WIDTH + PALETTE_WIDTH and
+        settings.palette_layout['title_height'] <= mouse_pos[1] <= PALETTE_HEIGHT):
+        
+        # Handle mousewheel event (Pygame 2.0+)
+        if event.type == pygame.MOUSEWHEEL:
+            if event.y > 0:  # Scroll up
+                settings.palette_scroll = max(0, settings.palette_scroll - 0.5)
+                return True
+            elif event.y < 0:  # Scroll down
+                settings.palette_scroll = min(
+                    settings.max_palette_scroll,
+                    settings.palette_scroll + 0.5
+                )
+                return True
+        
+        # Handle old-style mouse button events (Pygame 1.9.x)
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 4:  # Scroll up
+                settings.palette_scroll = max(0, settings.palette_scroll - 0.5)
+                return True
+            elif event.button == 5:  # Scroll down
+                settings.palette_scroll = min(
+                    settings.max_palette_scroll,
+                    settings.palette_scroll + 0.5
+                )
+                return True
+    
+    return False
+
+def handle_palette_click(pos, tiles):
+    """Handle clicking in the palette to select a tile"""
+    # Get list of palette tiles
+    palette_tiles = [(id, tile) for id, tile in tiles.items() if tile.is_palette_tile]
+    
+    # Get layout information from settings
+    layout = settings.palette_layout
+    
+    # Calculate which column was clicked
+    col_width = layout['preview_size'] + layout['horizontal_spacing']
+    relative_x = pos[0] - GRID_WIDTH - layout['horizontal_spacing']
+    col = int(relative_x // col_width)
+    
+    # Calculate which row was clicked
+    relative_y = pos[1] - layout['title_height']
+    row = int(relative_y // layout['item_height'])
+    
+    # Account for scroll position
+    actual_row = row + int(settings.palette_scroll)
+    
+    # Calculate clicked index
+    clicked_index = (actual_row * layout['tiles_per_row']) + col
+    
+    # Check if click is within valid bounds
+    if (0 <= col < layout['tiles_per_row'] and  # Valid column
+        relative_y >= 0 and  # Below title
+        relative_x >= 0 and  # Right of grid
+        relative_x <= col_width * layout['tiles_per_row'] and  # Within tile area
+        clicked_index >= 0 and  # Valid index
+        clicked_index < len(palette_tiles)):  # Within number of tiles
+        return palette_tiles[clicked_index][0]
+    
+    return None
 
 def update_buttons_position():
     """Update buttons position based on window size"""

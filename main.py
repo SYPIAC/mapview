@@ -3,7 +3,14 @@ import pygame
 import sys
 from settings import *
 from tiles import load_tiles, set_entrance_tile, grid_to_cell
-from ui import draw_coordinates, draw_status_message, draw_palette, update_buttons_position
+from ui import (
+    draw_coordinates, 
+    draw_status_message, 
+    draw_palette, 
+    update_buttons_position,
+    handle_palette_scroll,
+    handle_palette_click
+)
 from grid import draw_grid
 from file_io import save_map, load_map
 from input_handler import (
@@ -11,7 +18,8 @@ from input_handler import (
     handle_mouse_motion, 
     handle_mouse_button,
     handle_mousewheel,
-    check_keys_modifiers
+    check_keys_modifiers,
+    handle_mouse_interaction
 )
 
 def fixed_update():
@@ -88,31 +96,61 @@ def main():
                 
             # Mouse button events
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Create palette rect for reference
+                palette_rect = pygame.Rect(GRID_WIDTH, 0, PALETTE_WIDTH, PALETTE_HEIGHT)
+                
                 # Check if clicked on buttons
                 if save_button.handle_event(event) or load_button.handle_event(event):
                     continue
                     
-                # Otherwise handle grid or palette interaction
-                palette_rect = pygame.Rect(GRID_WIDTH, 0, PALETTE_WIDTH, PALETTE_HEIGHT)
-                new_selected = handle_mouse_button(event, all_tiles, selected_tile_id, palette_rect)
-                if new_selected is not None:
-                    selected_tile_id = new_selected
+                # Check for palette scrolling
+                if handle_palette_scroll(event):
+                    continue
                     
-            # Mouse wheel for zooming
+                # Check for palette tile selection
+                if event.button == 1 and event.pos[0] >= GRID_WIDTH:  # Left click in palette area
+                    new_selected = handle_palette_click(event.pos, all_tiles)
+                    if new_selected is not None:
+                        selected_tile_id = new_selected
+                        continue
+                
+                # Handle all other mouse button events
+                handle_mouse_button(event, all_tiles, selected_tile_id, palette_rect)
+                
+            # Mouse button up events
+            elif event.type == pygame.MOUSEBUTTONUP:
+                # Create palette rect for reference
+                palette_rect = pygame.Rect(GRID_WIDTH, 0, PALETTE_WIDTH, PALETTE_HEIGHT)
+                # Handle button release
+                handle_mouse_button(event, all_tiles, selected_tile_id, palette_rect)
+                
+            # Mouse wheel for zooming or palette scrolling
             elif event.type == pygame.MOUSEWHEEL:
-                # Update zoom and dimensions first
-                handle_mousewheel(event)
-                # Then update all tile images
-                for tile in all_tiles.values():
-                    tile.update_scaled_images()
+                # If mouse is over palette area, handle palette scrolling
+                if mouse_pos[0] >= GRID_WIDTH:
+                    if handle_palette_scroll(event):
+                        continue
+                # Otherwise handle zooming
+                else:
+                    # Update zoom and dimensions first
+                    handle_mousewheel(event)
+                    # Then update all tile images
+                    for tile in all_tiles.values():
+                        tile.update_scaled_images()
                     
             # Support for older pygame versions (1.9.x) where mouse wheel is button 4/5
             elif event.type == pygame.MOUSEBUTTONDOWN and (event.button == 4 or event.button == 5):
-                # Update zoom and dimensions first
-                handle_mousewheel(event)
-                # Then update all tile images
-                for tile in all_tiles.values():
-                    tile.update_scaled_images()
+                # If mouse is over palette area, handle palette scrolling
+                if mouse_pos[0] >= GRID_WIDTH:
+                    if handle_palette_scroll(event):
+                        continue
+                # Otherwise handle zooming
+                else:
+                    # Update zoom and dimensions first
+                    handle_mousewheel(event)
+                    # Then update all tile images
+                    for tile in all_tiles.values():
+                        tile.update_scaled_images()
                     
             # Keyboard shortcuts with modifiers
             elif event.type == pygame.KEYDOWN:

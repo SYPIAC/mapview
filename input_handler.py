@@ -81,20 +81,18 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
         drag_dist_x = (drag_start_x - event.pos[0]) / drag_sensitivity
         drag_dist_y = (drag_start_y - event.pos[1]) / drag_sensitivity
         
-        # Only update if there's actual movement (avoid tiny jumps)
-        if abs(drag_dist_x) > 0.1 or abs(drag_dist_y) > 0.1:
-            # Update camera position
-            camera_x += drag_dist_x / (BASE_TILE_SIZE * zoom_level)
-            camera_y += drag_dist_y / (BASE_TILE_SIZE * zoom_level)
-            
-            # Update settings module's camera position too
-            settings.camera_x = camera_x
-            settings.camera_y = camera_y
-            
-            # Record the time of this camera movement
-            last_drag_time = time.time()
+        # Update camera position
+        camera_x += drag_dist_x / (BASE_TILE_SIZE * zoom_level)
+        camera_y += drag_dist_y / (BASE_TILE_SIZE * zoom_level)
         
-        # Always update drag start position
+        # Update settings module's camera position too
+        settings.camera_x = camera_x
+        settings.camera_y = camera_y
+        
+        # Record the time of this camera movement
+        last_drag_time = time.time()
+        
+        # Update drag start position
         drag_start_x = event.pos[0]
         drag_start_y = event.pos[1]
     
@@ -115,11 +113,8 @@ def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
     """Handle mouse button events"""
     global drag_active, drag_start_x, drag_start_y, camera_x, camera_y, last_drag_time
     
-    # Check if inside the grid area (not palette)
-    in_grid_area = event.pos[0] < GRID_WIDTH
-    
     # Middle mouse button press - start drag
-    if event.button == 2 and in_grid_area:  # Middle mouse button pressed
+    if event.button == 2:  # Middle mouse button pressed
         drag_active = True
         drag_start_x = event.pos[0]
         drag_start_y = event.pos[1]
@@ -127,18 +122,13 @@ def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
     
     # Middle mouse button release - end drag
     elif event.button == 2:  # Middle mouse button released        
-        # Always end the drag state regardless
         drag_active = False
     
-    # Left or right mouse button
-    elif (event.button == 1 or event.button == 3) and in_grid_area:  # Left or right mouse button
+    # Left or right mouse button in grid area
+    elif (event.button == 1 or event.button == 3) and event.pos[0] < GRID_WIDTH:
         handle_mouse_interaction(event.pos, event.button, tiles, selected_tile_id)
     
-    # Handle clicking in the palette area
-    elif event.button == 1 and palette_rect.collidepoint(event.pos):  # Left button in palette
-        return handle_palette_click(event.pos, tiles)
-        
-    return selected_tile_id
+    return None  # No tile selection in input handler
 
 def handle_mousewheel(event):
     """Handle mouse wheel for zooming"""
@@ -208,40 +198,6 @@ def handle_mousewheel(event):
     global camera_x, camera_y
     camera_x = settings.camera_x
     camera_y = settings.camera_y
-
-def handle_palette_click(pos, tiles):
-    """Handle clicking in the palette to select a tile"""
-    # Find which tile was clicked based on position
-    y_offset = 70
-    
-    for tile_id, tile in tiles.items():
-        # Skip non-palette tiles (like entrance)
-        if not tile.is_palette_tile:
-            continue
-            
-        # Calculate tile selection area
-        position = (GRID_WIDTH + PALETTE_WIDTH // 2 - TILE_PREVIEW_SIZE // 2, y_offset)
-        select_rect = pygame.Rect(position[0] - 5, position[1] - 5, 
-                                TILE_PREVIEW_SIZE + 10, TILE_PREVIEW_SIZE + 10)
-        
-        if select_rect.collidepoint(pos):
-            return tile_id
-            
-        # Update y_offset for next tile
-        if tile.hotkey:
-            # With hotkey takes more vertical space
-            name_font = pygame.font.SysFont(None, 24)
-            name_text = name_font.render(tile.name, True, WHITE)
-            hotkey_text = f"Key: {tile.hotkey}"
-            hotkey_surface = name_font.render(hotkey_text, True, LIGHT_BLUE)
-            y_offset += name_text.get_height() + hotkey_surface.get_height() + TILE_PREVIEW_SIZE + 25
-        else:
-            name_font = pygame.font.SysFont(None, 24)
-            name_text = name_font.render(tile.name, True, WHITE)
-            y_offset += name_text.get_height() + TILE_PREVIEW_SIZE + 15
-    
-    # No tile was clicked, return current selection
-    return None
 
 def handle_mouse_interaction(pos, button, tiles, selected_tile_id):
     """Handle placing or removing tiles from the grid"""
