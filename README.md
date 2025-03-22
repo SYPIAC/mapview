@@ -2,6 +2,11 @@
 
 A simple grid-based tool for mapping out dungeon layouts in video games.
 
+## Screenshots
+
+![Dungeon Mapper Interface](screenshots/dungeon_mapper_screenshot.png)
+*Screenshot of the Dungeon Mapper application showing the grid, palette, and a sample map.*
+
 ## Features
 
 - Infinite grid for creating dungeon maps
