@@ -73,6 +73,7 @@ TORCH_LIT = 11
 TORCH_UNLIT = 12
 FOUNTAIN = 13
 NOTE = 14
+PIPETTE = 15  # Tool for picking up tiles from the grid
 ENTRANCE = -1  # Special entrance tile, moved to -1 to keep it separate from regular tiles
 
 # Create the grid - use dictionary for infinite grid

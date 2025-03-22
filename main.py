@@ -87,6 +87,20 @@ def initialize():
         # Save the image
         pygame.image.save(note_img, note_path)
     
+    # Create pipette tile image if it doesn't exist
+    pipette_path = "tiles/pipette.png"
+    if not os.path.exists(pipette_path):
+        # Create a transparent image with a pipette icon
+        pipette_img = pygame.Surface((32, 32), pygame.SRCALPHA)
+        # Draw a simple pipette shape
+        pygame.draw.line(pipette_img, (255, 0, 255), (8, 24), (24, 8), 2)  # Pipette stem
+        pygame.draw.circle(pipette_img, (255, 0, 255), (24, 8), 6)         # Pipette bulb
+        pygame.draw.circle(pipette_img, (255, 255, 255), (24, 8), 4)       # Pipette inner bulb
+        # Draw a small drop at the tip
+        pygame.draw.circle(pipette_img, (0, 255, 255), (8, 24), 2)         # Cyan drop
+        # Save the image
+        pygame.image.save(pipette_img, pipette_path)
+    
     # Load tiles
     all_tiles = load_tiles()
     
@@ -167,7 +181,10 @@ def main():
                         continue
                 
                 # Handle all other mouse button events
-                handle_mouse_button(event, all_tiles, selected_tile_id, palette_rect)
+                picked_tile = handle_mouse_button(event, all_tiles, selected_tile_id, palette_rect)
+                if picked_tile is not None:
+                    selected_tile_id = picked_tile
+                    continue
                 
             # Mouse button up events
             elif event.type == pygame.MOUSEBUTTONUP:

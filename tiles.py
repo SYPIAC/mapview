@@ -52,6 +52,7 @@ def load_tiles():
         TORCH_UNLIT: Tile(TORCH_UNLIT, "Torch (Unlit)", "tiles/torch_unlit.png", (128, 128, 128), "EQUALS"),  # Gray
         FOUNTAIN: Tile(FOUNTAIN, "Fountain", "tiles/fountain.png", (0, 191, 255), "LEFTBRACKET"),  # Deep sky blue
         NOTE: Tile(NOTE, "Note", "tiles/note.png", BLUE, "n"),  # Blue note tile
+        PIPETTE: Tile(PIPETTE, "Pipette", "tiles/pipette.png", (255, 0, 255), "q"),  # Magenta pipette tool
         ENTRANCE: Tile(ENTRANCE, "Entrance", "tiles/entrance.png", RED, is_palette_tile=False)
     }
     return tiles

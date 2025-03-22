@@ -78,6 +78,14 @@ def handle_mouse_motion(event, palette_rect, selected_tile_id=None, tiles=None):
     if editing_note:
         return
         
+    # Set cursor appearance based on the selected tool
+    if selected_tile_id == PIPETTE and event.pos[0] < GRID_WIDTH:
+        # Change cursor to show pipette mode
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_CROSSHAIR)
+    else:
+        # Reset to default cursor
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        
     # Handle middle mouse drag for camera panning
     if drag_active and pygame.mouse.get_pressed()[1]:  # Middle mouse button held (index 1)
         # Calculate drag distance (scaled by drag sensitivity and zoom)
@@ -175,7 +183,10 @@ def handle_mouse_button(event, tiles, selected_tile_id, palette_rect):
             return
         
         # If we're not handling notes specifically, proceed with normal interaction
-        handle_mouse_interaction(event.pos, event.button, tiles, selected_tile_id)
+        picked_tile = handle_mouse_interaction(event.pos, event.button, tiles, selected_tile_id)
+        if picked_tile is not None:
+            # Return the picked tile ID to change the selected tile
+            return picked_tile
     
     return None  # No tile selection in input handler
 
@@ -250,15 +261,32 @@ def handle_mouse_interaction(pos, button, tiles, selected_tile_id):
         global status_message, status_message_timer
         status_message = "Can't modify the entrance tile at (0,0)"
         status_message_timer = 180  # 3 seconds at 60 FPS
-        return
+        return None
     
+    # If pipette is selected and this is a left-click, try to pick up a tile
+    if selected_tile_id == PIPETTE and button == 1:
+        # Get the tile ID at the clicked location
+        tile_id = grid.get((cell_x, cell_y), EMPTY)
+        
+        # Only allow picking up palette tiles
+        if tile_id in tiles and tiles[tile_id].is_palette_tile:
+            status_message = f"Picked up: {tiles[tile_id].name}"
+            status_message_timer = 120  # 2 seconds at 60 FPS
+            return tile_id
+        else:
+            status_message = "Can't pick up this tile"
+            status_message_timer = 120
+            return None
+            
     # Left click - place selected tile
-    if button == 1:
+    elif button == 1:
         grid[(cell_x, cell_y)] = selected_tile_id
     # Right click - remove tile (set to empty)
     elif button == 3:
         if (cell_x, cell_y) in grid:
             grid[(cell_x, cell_y)] = EMPTY
+            
+    return None
 
 def check_keys_modifiers(event, all_tiles=None):
     """Check for keyboard shortcuts with modifiers"""
