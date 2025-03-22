@@ -38,6 +38,17 @@ def load_tiles():
         EMPTY: Tile(EMPTY, "Empty", "tiles/empty.png", BLACK, is_palette_tile=False),
         WALL: Tile(WALL, "Wall", "tiles/wall.png", BROWN, "1"),
         FLOOR: Tile(FLOOR, "Floor", "tiles/floor.png", LIGHT_BLUE, "2"),
+        LEVER: Tile(LEVER, "Lever", "tiles/lever.png", (255, 215, 0), "3"),  # Gold color
+        SPIKE_TRAP: Tile(SPIKE_TRAP, "Spike Trap", "tiles/spike_trap.png", (169, 169, 169), "4"),  # Dark gray
+        HOLE: Tile(HOLE, "Hole", "tiles/hole.png", (47, 79, 79), "5"),  # Dark slate gray
+        CHEST: Tile(CHEST, "Chest", "tiles/chest.png", (205, 133, 63), "6"),  # Peru brown
+        HIDDEN_WALL: Tile(HIDDEN_WALL, "Hidden Wall", "tiles/hidden_wall.png", (105, 105, 105), "7"),  # Dim gray
+        MIMIC: Tile(MIMIC, "Mimic", "tiles/mimic.png", (139, 69, 19), "8"),  # Saddle brown
+        GEM_WALL: Tile(GEM_WALL, "Gem Wall", "tiles/gem_wall.png", (147, 112, 219), "9"),  # Medium purple
+        GATE: Tile(GATE, "Gate", "tiles/gate.png", (184, 134, 11), "0"),  # Dark goldenrod
+        TORCH_LIT: Tile(TORCH_LIT, "Torch (Lit)", "tiles/torch_lit.png", (255, 140, 0), "MINUS"),  # Dark orange
+        TORCH_UNLIT: Tile(TORCH_UNLIT, "Torch (Unlit)", "tiles/torch_unlit.png", (128, 128, 128), "EQUALS"),  # Gray
+        FOUNTAIN: Tile(FOUNTAIN, "Fountain", "tiles/fountain.png", (0, 191, 255), "LEFTBRACKET"),  # Deep sky blue
         ENTRANCE: Tile(ENTRANCE, "Entrance", "tiles/entrance.png", RED, is_palette_tile=False)
     }
     return tiles

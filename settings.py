@@ -61,7 +61,18 @@ status_message_timer = 0
 EMPTY = 0
 WALL = 1
 FLOOR = 2
-ENTRANCE = 3  # Special entrance tile
+LEVER = 3
+SPIKE_TRAP = 4
+HOLE = 5
+CHEST = 6
+HIDDEN_WALL = 7
+MIMIC = 8
+GEM_WALL = 9
+GATE = 10
+TORCH_LIT = 11
+TORCH_UNLIT = 12
+FOUNTAIN = 13
+ENTRANCE = -1  # Special entrance tile, moved to -1 to keep it separate from regular tiles
 
 # Create the grid - use dictionary for infinite grid
 # Keys are (x, y) tuples, values are tile IDs
