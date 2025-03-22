@@ -100,21 +100,19 @@ def main():
                     
             # Mouse wheel for zooming
             elif event.type == pygame.MOUSEWHEEL:
+                # Update zoom and dimensions first
                 handle_mousewheel(event)
-                # Update all tile images after zoom change
+                # Then update all tile images
                 for tile in all_tiles.values():
                     tile.update_scaled_images()
-                # Update buttons position after resize
-                save_button, load_button = update_buttons_position()
                     
             # Support for older pygame versions (1.9.x) where mouse wheel is button 4/5
             elif event.type == pygame.MOUSEBUTTONDOWN and (event.button == 4 or event.button == 5):
+                # Update zoom and dimensions first
                 handle_mousewheel(event)
-                # Update all tile images after zoom change
+                # Then update all tile images
                 for tile in all_tiles.values():
                     tile.update_scaled_images()
-                # Update buttons position after resize
-                save_button, load_button = update_buttons_position()
                     
             # Keyboard shortcuts with modifiers
             elif event.type == pygame.KEYDOWN:

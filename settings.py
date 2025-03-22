@@ -72,23 +72,22 @@ screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption(WINDOW_TITLE)
 
 def init_screen():
-    """Initialize the screen with the current dimensions"""
-    global screen
-    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-    pygame.display.set_caption(WINDOW_TITLE)
-
-def update_grid_dimensions():
-    """Update all dimension-related globals when zoom changes"""
-    global TILE_SIZE, GRID_WIDTH, GRID_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, PALETTE_HEIGHT, screen, zoom_level
+    """Initialize the screen with fixed dimensions"""
+    global screen, WINDOW_WIDTH, WINDOW_HEIGHT, GRID_WIDTH, GRID_HEIGHT, PALETTE_HEIGHT
     
-    current_zoom = zoom_level  # Store in local variable to ensure we're using the correct value
-    TILE_SIZE = BASE_TILE_SIZE * current_zoom
-    
+    # Set fixed window dimensions based on default zoom
     GRID_WIDTH = int(GRID_WIDTH_TILES * BASE_TILE_SIZE)  # Keep screen size constant
     GRID_HEIGHT = int(GRID_HEIGHT_TILES * BASE_TILE_SIZE)
     PALETTE_HEIGHT = GRID_HEIGHT
     WINDOW_WIDTH = GRID_WIDTH + PALETTE_WIDTH
     WINDOW_HEIGHT = GRID_HEIGHT
     
-    # Resize the window
-    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT)) 
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    pygame.display.set_caption(WINDOW_TITLE)
+
+def update_grid_dimensions():
+    """Update all dimension-related globals when zoom changes"""
+    global TILE_SIZE, zoom_level
+    
+    current_zoom = zoom_level  # Store in local variable to ensure we're using the correct value
+    TILE_SIZE = BASE_TILE_SIZE * current_zoom

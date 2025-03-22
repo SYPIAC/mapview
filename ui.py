@@ -57,9 +57,12 @@ def draw_coordinates(surface, mouse_pos):
     grid_x, grid_y = screen_to_grid(mouse_pos[0], mouse_pos[1])
     cell_x, cell_y = grid_to_cell(grid_x, grid_y)
     
+    # Import settings to get current zoom level
+    import settings
+    
     font = pygame.font.SysFont(None, 24)
     text = f"Grid: ({cell_x}, {cell_y})"
-    zoom_text = f"Zoom: {zoom_level:.2f}x"
+    zoom_text = f"Zoom: {settings.zoom_level:.2f}x"
     
     text_surface = font.render(text, True, WHITE)
     zoom_surface = font.render(zoom_text, True, WHITE)
