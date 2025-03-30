@@ -78,6 +78,8 @@ CRONE = 16  # New crone tile
 DOOR = 17  # New door tile
 THRONE = 18  # New throne tile
 BOSS = 19  # New boss tile
+EXIT = 20  # Exit tile
+POISON_POOL = 21 # Poison pool
 ENTRANCE = -1  # Special entrance tile, moved to -1 to keep it separate from regular tiles
 
 # Create the grid - use dictionary for infinite grid

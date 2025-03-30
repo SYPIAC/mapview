@@ -41,23 +41,25 @@ def load_tiles():
         WALL: Tile(WALL, "Wall", "tiles/wall.png", BROWN, "1"),
         FLOOR: Tile(FLOOR, "Floor", "tiles/floor.png", LIGHT_BLUE, "2"),
         LEVER: Tile(LEVER, "Lever", "tiles/lever.png", (255, 215, 0), "3"),  # Gold color
-        SPIKE_TRAP: Tile(SPIKE_TRAP, "Spike Trap", "tiles/spike_trap.png", (169, 169, 169), "4"),  # Dark gray
+        SPIKE_TRAP: Tile(SPIKE_TRAP, "Spike Trap", "tiles/spike_trap.png", (169, 169, 169), "t"),  # Dark gray
         HOLE: Tile(HOLE, "Hole", "tiles/hole.png", (47, 79, 79), "5"),  # Dark slate gray
-        CHEST: Tile(CHEST, "Chest", "tiles/chest.png", (205, 133, 63), "6"),  # Peru brown
-        HIDDEN_WALL: Tile(HIDDEN_WALL, "Hidden Wall", "tiles/hidden_wall.png", (105, 105, 105), "7"),  # Dim gray
-        MIMIC: Tile(MIMIC, "Mimic", "tiles/mimic.png", (139, 69, 19), "8"),  # Saddle brown
+        CHEST: Tile(CHEST, "Chest", "tiles/chest.png", (205, 133, 63), "c"),  # Peru brown
+        HIDDEN_WALL: Tile(HIDDEN_WALL, "Hidden Wall", "tiles/hidden_wall.png", (105, 105, 105), "h"),  # Dim gray
+        MIMIC: Tile(MIMIC, "Mimic", "tiles/mimic.png", (139, 69, 19), "m"),
         GEM_WALL: Tile(GEM_WALL, "Gem Wall", "tiles/gem_wall.png", (147, 112, 219), "9"),  # Medium purple
         GATE: Tile(GATE, "Gate", "tiles/gate.png", (184, 134, 11), "0"),  # Dark goldenrod
-        TORCH_LIT: Tile(TORCH_LIT, "Torch (Lit)", "tiles/torch_lit.png", (255, 140, 0), "MINUS"),  # Dark orange
-        TORCH_UNLIT: Tile(TORCH_UNLIT, "Torch (Unlit)", "tiles/torch_unlit.png", (128, 128, 128), "EQUALS"),  # Gray
+        TORCH_LIT: Tile(TORCH_LIT, "Torch (Lit)", "tiles/torch_lit.png", (255, 140, 0), "6"),  # Dark orange
+        TORCH_UNLIT: Tile(TORCH_UNLIT, "Torch (Unlit)", "tiles/torch_unlit.png", (128, 128, 128), "7"),  # Gray
         FOUNTAIN: Tile(FOUNTAIN, "Fountain", "tiles/fountain.png", (0, 191, 255), "LEFTBRACKET"),  # Deep sky blue
+        POISON_POOL: Tile(POISON_POOL, "Poison Pool", "tiles/poison_pool.png", (0, 255, 0), "p"),  # Green
         NOTE: Tile(NOTE, "Note", "tiles/note.png", BLUE, "n"),  # Blue note tile
         PIPETTE: Tile(PIPETTE, "Pipette", "tiles/pipette.png", (255, 0, 255), "q"),  # Magenta pipette tool
-        CRONE: Tile(CRONE, "Crone", "tiles/crone.png", (153, 51, 153), "c"),  # Purple-ish for crone
+        CRONE: Tile(CRONE, "Crone", "tiles/crone.png", (153, 51, 153), "4"),  # Purple-ish for crone 
         DOOR: Tile(DOOR, "Door", "tiles/door.png", (139, 69, 19), "e"),  # Similar to brown for door
-        THRONE: Tile(THRONE, "Throne", "tiles/throne.png", (128, 0, 128), "t"),  # Purple for throne
+        THRONE: Tile(THRONE, "Throne", "tiles/throne.png", (128, 0, 128), "l"),  # Purple for throne
         BOSS: Tile(BOSS, "Boss", "tiles/boss.png", (178, 34, 34), "i"),  # Red-ish color for boss
-        ENTRANCE: Tile(ENTRANCE, "Entrance", "tiles/entrance.png", RED, is_palette_tile=False)
+        EXIT: Tile(EXIT, "Exit", "tiles/exit.png", (0, 100, 0), "PERIOD"),  # Dark green for exit
+        ENTRANCE: Tile(ENTRANCE, "Entrance", "tiles/entrance.png", RED, is_palette_tile=False),
     }
     return tiles
 
