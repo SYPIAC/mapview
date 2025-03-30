@@ -53,6 +53,10 @@ def load_tiles():
         FOUNTAIN: Tile(FOUNTAIN, "Fountain", "tiles/fountain.png", (0, 191, 255), "LEFTBRACKET"),  # Deep sky blue
         NOTE: Tile(NOTE, "Note", "tiles/note.png", BLUE, "n"),  # Blue note tile
         PIPETTE: Tile(PIPETTE, "Pipette", "tiles/pipette.png", (255, 0, 255), "q"),  # Magenta pipette tool
+        CRONE: Tile(CRONE, "Crone", "tiles/crone.png", (153, 51, 153), "c"),  # Purple-ish for crone
+        DOOR: Tile(DOOR, "Door", "tiles/door.png", (139, 69, 19), "e"),  # Similar to brown for door
+        THRONE: Tile(THRONE, "Throne", "tiles/throne.png", (128, 0, 128), "t"),  # Purple for throne
+        BOSS: Tile(BOSS, "Boss", "tiles/boss.png", (178, 34, 34), "i"),  # Red-ish color for boss
         ENTRANCE: Tile(ENTRANCE, "Entrance", "tiles/entrance.png", RED, is_palette_tile=False)
     }
     return tiles

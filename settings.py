@@ -74,6 +74,10 @@ TORCH_UNLIT = 12
 FOUNTAIN = 13
 NOTE = 14
 PIPETTE = 15  # Tool for picking up tiles from the grid
+CRONE = 16  # New crone tile
+DOOR = 17  # New door tile
+THRONE = 18  # New throne tile
+BOSS = 19  # New boss tile
 ENTRANCE = -1  # Special entrance tile, moved to -1 to keep it separate from regular tiles
 
 # Create the grid - use dictionary for infinite grid
